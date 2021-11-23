@@ -1,6 +1,6 @@
-Params(
-[string]$IPadress = "x.x.x.x",
-[string]$AdoptURL = "http://unifi.citychic.com.au:8081/inform",
+Param(
+[string]$IPadress,
+[string]$AdoptURL,
 [string]$SSHpass)
 
 $Creds = New-Object System.Management.Automation.PSCredential ('admin', $(ConvertTo-SecureString $SSHpass -AsPlainText -Force))
