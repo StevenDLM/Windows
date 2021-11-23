@@ -1,6 +1,8 @@
-﻿
+#Server Names
 $Servers = @("sydsrv01","newsrv01")
+#Share Names
 $Shares = @("Admin", "AdminV2", "Users$")
+#Replication Group Name
 $RGName = "CLI"
 
 Foreach($SrcServer in $Servers){
@@ -9,8 +11,13 @@ Foreach($SrcServer in $Servers){
 			Write-Host "Backlog from $SrcServer to $DstServer"
 			Foreach($Share in $Shares){
 				
+				#Build DFSRDiag Command to use Invoke-Expression
 				$BLCommand = "DfsrDiag Backlog /Sendingmember:"+$SrcServer+" /ReceivingMember:"+$DstServer+" /rgname:'"+$RGName+"' /rfname:'"+$Share+"'"
+				
+				#Get Backlog List
 				$Backlog = Invoke-Expression -Command $BLCommand
+				
+				#Count Backlog of Files
 				$BackLogFilecount = 0
 				foreach ($item in $Backlog)
 				{
@@ -20,6 +27,7 @@ Foreach($SrcServer in $Servers){
 					}
 				}
 				
+				#Pretty Colours
 				if ($BacklogFileCount -eq 0){
 					$Color="white"
 				}
@@ -29,6 +37,8 @@ Foreach($SrcServer in $Servers){
 				else{
 					$Color="red"
 				}
+				
+				#Output Results
 				Write-Host "$BacklogFileCount files in backlog $SrcServer->$DstServer for $Share" -fore $Color
 		
 			}
