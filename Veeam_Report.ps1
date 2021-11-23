@@ -1,4 +1,4 @@
-Params([string]$ReportPath = "C:\Temp")
+Param([string]$ReportPath = "C:\Temp")
 
 $ValidMenu = $FALSE
 cls
