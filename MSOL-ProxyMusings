@@ -1,0 +1,257 @@
+*********************
+update accounts that are still using onmicrosoft.com
+*********************
+
+$onUsers = get-aduser -filter * -property mail,proxyAddresses | ?{$_.mail -like "*onmicrosoft.com"}
+$newProxy = New-Object -TypeName 'object[]' -ArgumentList 3
+
+foreach($user in $onUsers){
+$proxy = $user.proxyAddresses;
+$newProxy[0] = $proxy[0];
+$newProxy[1] = "SMTP" + $proxy[2].substring(4);
+$newProxy[2] = "smtp" + $proxy[1].substring(4);
+set-aduser $user.SamAccountName -email $newProxy[1].substring(5) -replace @{Proxyaddresses=$newProxy};
+}
+
+*********************
+update all accounts that dont have the "."@cc email
+depends on csv file though...need to check other manually...
+*********************
+
+$swapProxy = import-csv "C:\Users\curo\Documents\Scripts\cc-proxy.csv"
+$newProxy = New-Object -TypeName 'object[]' -ArgumentList 4
+
+foreach($proxy in $swapProxy){
+	$user = get-aduser $proxy.SamAccountName -property mail,proxyAddresses
+	
+	$i = 0
+	$replaced = $FALSE;
+	
+	foreach($alias in $user.proxyAddresses){
+		if(($alias | findstr "SMTP") -AND -NOT ($alias -like "*.*@*")) {
+			$alias = "smtp:" + $alias.substring(5);
+			$replaced = $TRUE;
+		}
+		$newProxy[$i] = $alias;
+		$i++
+	}
+	if($replaced){$proxy.addProxy;$newProxy[$i] = "SMTP:" + $proxy.addProxy};
+	set-aduser $user.SamAccountName -email $proxy.addProxy -replace @{Proxyaddresses=$newProxy};
+}
+
+*********************
+checking all other accounts that dont use the "."@cc address
+*********************
+
+$Users = get-aduser -filter '-NOT email -like "*.*@*"'  -searchbase "ou=users,ou=root,dc=sfg,dc=cc,dc=com,dc=au" -property mail,proxyAddresses
+
+
+***set back***
+
+$allUsers = get-aduser -filter * -property mail,proxyAddresses -searchbase "ou=users,ou=root,dc=sfg,dc=cc,dc=com,dc=au" | ?{$_.mail -like "*@cc.com.au"}
+
+foreach($user in $allUsers){
+	$newProxy = New-Object -TypeName 'object[]' -ArgumentList $($user.proxyaddresses).length;
+	$oldProxy = $user.proxyAddresses;
+	$noSMTP = $TRUE;
+	$i = 0;
+	"-----Old-----"
+	$oldProxy
+	foreach($proxy in $oldProxy){
+		if($proxy -clike "SMTP:*"){
+			$newProxy[$i] = "smtp" + $proxy.substring(4);
+		}else{
+			if(($noSMTP) -AND ($proxy -like "*@cc.com.au")){
+				$noSMTP = $FALSE;
+				$newProxy[$i] = "SMTP" + $proxy.substring(4);
+				$email = $proxy.substring(5);
+			}else{
+				$newProxy[$i] = $proxy;
+			}
+		}
+		$i++;
+	}
+	"----New-----"
+	$newProxy
+	"*****Done*****"
+	set-aduser $user.SamAccountName -email $email -replace @{Proxyaddresses=$newProxy};
+}
+
+
+
+
+
+**************
+
+#foreach($User in $Users)
+# get alias from primary smtp
+# foreach (proxyaddresses)
+#  find onmicrosoft domain with same alias
+#  found == TRUE
+# if found != TRUE
+#   make it
+#  set it to onmicrosoft
+
+"Name,Total Addresses,av Primary,av Sceondary,Onmicrosoft Present"
+foreach($user in (get-qaduser | ?{$_.proxyaddresses -like "*av.com"})){
+	$newProxy = New-Object -TypeName 'object[]' -ArgumentList $($user.proxyaddresses).length;
+	$oldProxy = $user.proxyAddresses;
+	$noSMTP = $TRUE;
+	$i = 0;
+	"-----Old-----"
+	$oldProxy	
+	foreach($proxy in $user.proxyaddresses){
+		$Alias = $proxy.substring(5,$proxy.IndexOf("@")-5)
+		if($proxy -CLIKE "SMTP:*av.com"){
+			$newProxy[$i] = "SMTP:" + $Alias + "@av.onmicrosoft.com"
+		}else{
+			if($proxy -CLIKE "smtp:*av.com"){
+				$newProxy[$i] = "smtp:" + $Alias + "@av.onmicrosoft.com"
+			}else{
+				if($proxy -CLIKE "SIP:*av.com"){
+					$newProxy[$i] = "SIP:" + $Alias + "@av.onmicrosoft.com"
+				}else{
+					$newProxy[$i] = $proxy
+				}
+			}
+		}
+		$i++
+	}
+	$newProxy
+	
+	set-qadobject -identity $user.displayname -objectattributes @{proxyAddresses = $newProxy}
+}
+
+
+*************
+
+
+
+foreach($user in (get-msoluser -maxresults 1000 | ?{$_.ProxyAddresses -like "*av.com"})){
+	$newProxy = New-Object -TypeName 'object[]' -ArgumentList $($user.proxyaddresses).length;
+	$oldProxy = $user.proxyAddresses;
+	$noSMTP = $TRUE;
+	$i = 0;
+	"-----" + $user.displayname
+	"-----Old-----"
+	$oldProxy	
+	foreach($proxy in $user.proxyaddresses){
+		$Alias = $proxy.substring(5,$proxy.IndexOf("@")-5)
+		if($proxy -CLIKE "SMTP:*av.com"){
+			$newProxy[$i] = "SMTP:" + $Alias + "@av.onmicrosoft.com"
+			Set-MailUser -Identity $User.DisplayName -EmailAddresses @{Add=$newProxy[$i]}
+			Set-MailUser -Identity $User.DisplayName -EmailAddresses @{Remove=$proxy}
+		}else{
+			if($proxy -CLIKE "smtp:*av.com"){
+				Set-MailUser -Identity $User.DisplayName -EmailAddresses @{Remove=$proxy}
+			}else{
+				if($proxy -CLIKE "SIP:*av.com"){
+					$newProxy[$i] = "SIP:" + $Alias + "@av.onmicrosoft.com"
+				}else{
+					$newProxy[$i] = $proxy
+				}
+			}
+		}
+		$i++
+	}
+	"-----New-----"
+	$newProxy
+	
+}
+
+
+	set-msoluser -objectid $user.objectid -objectattributes @{proxyAddresses = $newProxy}
+
+get-msoluser -maxresults 1000 | ?{$_.ProxyAddresses -like "*av.com"}
+
+
+
+*************
+
+$AveUsers = get-aduser -filter * -searchbase "OU=av,OU=Users,OU=Root,DC=sfg,DC=cc,DC=com,DC=au" -properties *
+
+
+
+foreach($user in $AveUsers){
+	$newProxy = New-Object -TypeName 'object[]' -ArgumentList 5
+	$newProxy[0] = "smtp:" + $($user.displayname -replace ' ','.') + "@av.net"
+	$newProxy[1] = "SMTP:" + $($user.displayname -replace ' ','.') + "@av.com"
+	$newProxy[2] = "smtp:" + $($user.displayname -replace ' ','.') + "@ccau.onmicrosoft.com"
+	$newProxy[3] = "smtp:" + $($user.givenname.substring(0,1)) + $($user.sn) + "@av.net"
+	$newProxy[4] = "smtp:" + $($user.givenname.substring(0,1)) + $($user.sn) + "@av.com"
+	set-aduser "$($user.samaccountname)" -EmailAddress ($($user.displayname -replace ' ','.') + "@av.com") -replace @{proxyAddresses = $newProxy}
+}
+
+
+
+*********************
+
+$AveGroups = Get-DistributionGroup | ?{$_.PrimarySmtpAddress -like "*@av.com"} | select identity,displayname,primarysmtpaddress
+
+foreach($group in $AveGroups){
+$newAlias = $($group.Primarysmtpaddress.substring(0,$group.Primarysmtpaddress.IndexOf("@"))) + "@av.onmicrosoft.com"
+set-distributiongroup "$($group.identity)" -emailaddresses @{Add=$newAlias}
+set-distributiongroup "$($group.identity)" -primarysmtpaddress $newAlias
+set-distributiongroup "$($group.identity)" -emailaddresses @{Remove=$group.Primarysmtpaddress}
+
+}
+
+
+*************
+
+foreach($user in (get-mailbox | ?{$_.EmailAddresses -like "*av.com"})){
+	$NumAveAlias = 0
+	$i = 0
+	foreach($proxy in $user.emailaddresses){
+		if($proxy -like "*@av.com"){
+			Set-Mailbox $user.identity -EmailAddresses @{remove="$proxy"}
+		}
+	}
+}
+	
+
+	$newProxy = New-Object -TypeName 'object[]' -ArgumentList ($($user.emailaddresses).length)-$NumAveAlias
+	foreach($proxy in $user.emailaddresses){
+		if(-NOT $proxy -like "*@av.com"){
+			$newProxy[$i]
+		}
+		$i++
+	}
+	set-mailbox $user.identity -emailaddresses @{}
+}
+	
+	
+	
+	$oldProxy = $user.proxyAddresses;
+	$noSMTP = $TRUE;
+	$i = 0;
+	"-----" + $user.displayname
+	"-----Old-----"
+	$oldProxy	
+	foreach($proxy in $user.proxyaddresses){
+		$Alias = $proxy.substring(5,$proxy.IndexOf("@")-5)
+		if($proxy -CLIKE "SMTP:*av.com"){
+			$newProxy[$i] = "SMTP:" + $Alias + "@av.onmicrosoft.com"
+			Set-MailUser -Identity $User.DisplayName -EmailAddresses @{Add=$newProxy[$i]}
+			Set-MailUser -Identity $User.DisplayName -EmailAddresses @{Remove=$proxy}
+		}else{
+			if($proxy -CLIKE "smtp:*av.com"){
+				Set-MailUser -Identity $User.DisplayName -EmailAddresses @{Remove=$proxy}
+			}else{
+				if($proxy -CLIKE "SIP:*av.com"){
+					$newProxy[$i] = "SIP:" + $Alias + "@av.onmicrosoft.com"
+				}else{
+					$newProxy[$i] = $proxy
+				}
+			}
+		}
+		$i++
+	}
+	"-----New-----"
+	$newProxy
+	
+}
+
+
+	set-msoluser -objectid $user.objectid -objectattributes @{proxyAddresses = $newProxy}
+
