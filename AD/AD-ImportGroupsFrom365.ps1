@@ -1,5 +1,5 @@
 
-Params($PathOU = "OU=Groups,OU=Root,DC=sfg,DC=cc,DC=com,DC=au", $TargetOU = "OU=Office365,OU=Groups,OU=Root,DC=sfg,DC=cc,DC=com,DC=au")
+Param($PathOU = "OU=Groups,OU=Root,DC=sfg,DC=cc,DC=com,DC=au", $TargetOU = "OU=Office365,OU=Groups,OU=Root,DC=sfg,DC=cc,DC=com,DC=au")
 
 Import-Module MSOnline
 Import-Module ActiveDirectory
