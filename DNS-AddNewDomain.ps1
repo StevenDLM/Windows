@@ -1,4 +1,4 @@
-params(
+param(
 	$NS_1 = "ns1.a.net.au.",
 	$NS_2 = "ns2.a.net.au.",
 	$NS_Master = '1.2.1.2'
