@@ -7,6 +7,8 @@ This includes reports, alerts and configuration wizards for:
 * Cluster Failover Manager
 * Remote Desktop Services
 * VMWare
+* Veeam
+* Unifi (Adoption via SSH)
 * Distributed File System
 * Exchange
 * Azure/Office365
