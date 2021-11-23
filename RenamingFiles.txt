@@ -1,0 +1,41 @@
+dir | mi -dest {($_.Basename -replace '[.]',' ').Trim() + $_.Extension}
+
+dir | mi -dest {($_.Basename -replace '_(Dual Audio_10bit_720p_x265)','') + $_.Extension}
+
+dir | mi -dest {($_.Basename.insert(18,'7')).Trim() + ($_.Basename.substring(21)).Trim() + $_.Extension} -whatif
+
+dir | mi -dest {($_.Basename.substring(5)).Trim() + $_.Extension}
+
+dir | mi -dest {($_.Basename.substring(0,24)).Trim() + $_.Extension}
+
+dir | echo {$_.Basename.substring(0,20).Trim() + ' ' + $_.Basename.substring(28).Trim() + ' (' + $_.Basename.substring(22,4) + ')' + $_.Extension}
+
+
+cd "..\Season 11"
+
+$bkp = dir
+dir | mi -dest {($_.Basename.substring(27,($_.Basename.length - (28 + 21)))).Trim() + $_.Extension}
+$files = dir
+$ep = 1
+
+
+$NewName = "War and Peace and War"
+foreach($i in 0..48){
+	$Ep = 48-$i
+	$StoreName = $FileList[$Ep].Basename.substring(41).trim()
+	$FileList[$Ep] | mi -dest {($_.Basename.substring(0,41)).Trim() + $NewName + $_.Extension}
+	$NewName = $StoreName
+}
+
+$FileNames = @()
+foreach($Ep in 0..48){
+	$FileNames += $FileList[$Ep].Basename.substring(41).trim()
+}
+
+$FullList = @("The Torque Armada","Gravitina","XL","Little Secrets","Inside Job","NOS-4-A2","The Planet Destroyer","The Beasts of Karn","Tag Team","The Main Event","The Return of XL","Strange Invasion","The Taking of PC-7","Mindwarp","Mira's Wedding","Panic on Bathyos","Shiv Katall","Stress Test","A Zoo Out There","Root of Evil","Super Nova","Downloaded","The Plasma Monster","The Crawling Flesh","Dirty Work","The Slayer","The Lightyear Factor","Clone Rangers","Bunzel Fever","Devolutionaries","Head Case","The Yukari Imprint","The Shape Stealer","Star Crossed","Haunted Moon","Stranger Invasion","Eye of the Tempest","Revenge of the Monsters","Lone Wolf","Planet of the Lost","Revenge of the Raenoks","The Starthought","Millennial Bugs","Conspiracy","At Large on a Small Planet","Sunquake","First Missions","Large Target","War and Peace and War")
+
+foreach($Ep in 1..48){
+
+($($FileNames[$Ep]) -eq $($FullList[$Ep-1]))
+
+}
