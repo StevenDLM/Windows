@@ -1,4 +1,4 @@
-Params(
+Param(
 [string]$FilePath = "C:\Temp\"
 )
 
