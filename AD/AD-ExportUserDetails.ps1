@@ -1,4 +1,4 @@
-Params([string]$FilePath = "C:\Temp\", [string]$OU = "OU=Root,DC=CLI,DC=com,DC=au")
+Param([string]$FilePath = "C:\Temp\", [string]$OU = "OU=Root,DC=CLI,DC=com,DC=au")
 
 $Hostname = hostname
 
