@@ -1,6 +1,6 @@
 Function GenPWD{
 	#Params set length of LowerCase, Special and Numbers used in Password
-  params([int]$LenLow, [int]$LenChar, [int]$LenNum)
+  param([int]$LenLow, [int]$LenChar, [int]$LenNum)
 	  
   
 
