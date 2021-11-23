@@ -1,4 +1,4 @@
-Params(
+Param(
 [string]$SearchOU = "ou=users,ou=root,dc=sfg,dc=cc,dc=com,dc=au",
 [string]$OldDomain = "oldDomain.com.au",
 [string]$NewDomain = "NewDomain.co.uk",
