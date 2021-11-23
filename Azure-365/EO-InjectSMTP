@@ -1,0 +1,60 @@
+Params(
+[string]$SearchOU = "ou=users,ou=root,dc=sfg,dc=cc,dc=com,dc=au",
+[string]$OldDomain = "oldDomain.com.au",
+[string]$NewDomain = "NewDomain.co.uk",
+[string]$LogPath = "C:\Temp\Logs")
+
+cls
+
+$TrFile = "$LogPath\InjectSMTP_"+(get-date -format yyyMMdd-HHmmss) + ".log"
+
+start-transcript $TrFile
+
+$allUsers = get-aduser -filter * -property mail,proxyAddresses -searchbase $SearchOU | ?{$_.mail -like "*$OldDomain"}
+
+foreach($user in $allUsers){
+	#Make new Array of size of existing proxyAddresses +1
+	$newProxy = New-Object -TypeName 'object[]' -ArgumentList (($user.proxyaddresses).count + 1)
+	
+	#Make Array of old Proxyaddresses
+	$oldProxy = $user.proxyAddresses
+	
+	$noSMTP = $TRUE
+	$i = 0
+	
+	#List all old ProxyAddresses
+	"-----Old-----"
+	$oldProxy
+	
+	#Foreach Proxy Address
+	foreach($proxy in $oldProxy){
+	
+		#If Proxy is Primary
+		if($proxy -clike "SMTP:*"){
+		
+			#Make old Primary into an Alias
+			$newProxy[$i] = "smtp" + $proxy.substring(4)
+			
+			#Inject new Primary by replacing $OldDomain with $NewDomain
+			$i++
+			$email = ($proxy.substring(5) -replace "$OldDomain","$NewDomain")
+			$newProxy[$i] = "SMTP:" + $email
+			
+		}else{
+			
+			#Inherit old Proxy Address
+			$newProxy[$i] = $proxy
+		}
+		$i++
+	}
+	
+	#List all new Proxy Addresses
+	"----New-----"
+	$newProxy
+	"*****Done*****"
+	
+	set-aduser $user.SamAccountName -UserPrincipalName $email -mail $email -replace @{Proxyaddresses=$newProxy}
+}
+
+stop-transcript
+
