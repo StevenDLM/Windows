@@ -1,4 +1,4 @@
-Params([string]$logPath = 'C:\ProgramData\Logfiles', [string]$TopFolder, [string]$DOMAIN = "CLI")
+Param([string]$logPath = 'C:\ProgramData\Logfiles', [string]$TopFolder, [string]$DOMAIN = "CLI")
 
 #Start logging
 $date = Get-Date -format HHmm_ddMMyy
